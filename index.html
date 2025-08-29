@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Leitor de Código de Barras e QR</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background: #f4f4f9;
+    }
+    h2 {
+      color: #333;
+    }
+    video {
+      width: 100%;
+      max-width: 400px;
+      border: 3px solid #333;
+      border-radius: 12px;
+      margin-bottom: 15px;
+    }
+    #resultado {
+      font-size: 18px;
+      font-weight: bold;
+      color: green;
+      margin-top: 10px;
+    }
+    #erro {
+      color: red;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+      text-align: left;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    li {
+      background: white;
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h2>📷 Escaneie Código de Barras ou QR Code</h2>
+  <video id="preview" playsinline></video>
+  <p id="resultado">Aponte a câmera para o código...</p>
+  <p id="erro"></p>
+
+  <h3>📋 Histórico de Códigos Lidos</h3>
+  <ul id="historico"></ul>
+
+  <!-- Biblioteca ZXing -->
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const video = document.getElementById('preview');
+    const resultado = document.getElementById('resultado');
+    const erroMsg = document.getElementById('erro');
+    const historico = document.getElementById('historico');
+
+    async function iniciarScanner() {
+      try {
+        const devices = await codeReader.listVideoInputDevices();
+
+        if (devices.length === 0) {
+          erroMsg.textContent = "❌ Nenhuma câmera encontrada!";
+          return;
+        }
+
+        // Procura a câmera traseira
+        let deviceId = devices[0].deviceId;
+        const cameraTraseira = devices.find(d => d.label.toLowerCase().includes("back"));
+        if (cameraTraseira) {
+          deviceId = cameraTraseira.deviceId;
+        }
+
+        // Inicia a leitura
+        await codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
+          if (result) {
+            resultado.textContent = "✅ Código lido: " + result.text;
+            
+            // Evita duplicar se for o mesmo código consecutivo
+            if (!historico.firstChild || historico.firstChild.textContent !== result.text) {
+              const item = document.createElement("li");
+              item.textContent = result.text;
+              historico.insertBefore(item, historico.firstChild); // adiciona no topo
+            }
+          }
+        });
+
+      } catch (error) {
+        erroMsg.textContent = "❌ Erro ao acessar a câmera: " + error.message;
+      }
+    }
+
+    iniciarScanner();
+  </script>
+</body>
+</html>
