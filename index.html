@@ -289,13 +289,16 @@
       transform: translateX(26px);
     }
     
-    .zoom-controls {
-      margin: 10px 0;
+    .volume-control {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
     
-    .zoom-btn {
-      padding: 8px 15px;
-      margin: 0 5px;
+    .volume-slider {
+      width: 100px;
     }
   </style>
 </head>
@@ -312,12 +315,6 @@
       <div class="scanner-overlay">
         <div class="scanner-line"></div>
       </div>
-    </div>
-    
-    <div class="zoom-controls">
-      <button id="btnZoomOut" class="zoom-btn">🔍-</button>
-      <span>Zoom: <span id="zoomLevel">1.0x</span></span>
-      <button id="btnZoomIn" class="zoom-btn">🔍+</button>
     </div>
     
     <div id="status" class="status status-scanning">Iniciando câmera...</div>
@@ -340,6 +337,12 @@
       </label>
     </div>
     
+    <div class="volume-control">
+      <span>Volume:</span>
+      <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="80">
+      <span id="volumeValue">80%</span>
+    </div>
+    
     <div class="counter">
       <div>Total de Itens Escaneados:</div>
       <div id="total" class="total">0</div>
@@ -354,7 +357,7 @@
     
     <div class="alternative-methods">
       <h3>🔍 Dicas para Melhor Leitura</h3>
-      <p>• Use o zoom para códigos menores</p>
+      <p>• Aproxime a câmera para códigos menores</p>
       <p>• Melhore a iluminação do ambiente</p>
       <p>• Mantenha a câmera estável</p>
       <p>• Use a câmera traseira para melhor qualidade</p>
@@ -376,10 +379,9 @@
     const btnSwitch = document.getElementById('btnSwitch');
     const btnClear = document.getElementById('btnClear');
     const btnTestSound = document.getElementById('btnTestSound');
-    const btnZoomIn = document.getElementById('btnZoomIn');
-    const btnZoomOut = document.getElementById('btnZoomOut');
-    const zoomLevel = document.getElementById('zoomLevel');
     const soundToggle = document.getElementById('soundToggle');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeValue = document.getElementById('volumeValue');
     const scannerContainer = document.getElementById('scanner-container');
     const cameraPlaceholder = document.getElementById('camera-placeholder');
     
@@ -391,14 +393,31 @@
     let usingFrontCamera = true;
     let scanInterval = null;
     let audioContext = null;
-    let currentZoom = 1.0;
-    let lastScanTime = 0;
-    let scanCooldown = 2000; // 2 segundos entre scans
+    let volume = 0.8; // Volume padrão (80%)
+    let beepBuffer = null;
 
-    // Inicializar o contexto de áudio
-    function initAudio() {
+    // Inicializar o contexto de áudio e carregar o som
+    async function initAudio() {
       try {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Criar um bip sintético
+        const duration = 0.1;
+        const sampleRate = audioContext.sampleRate;
+        const numChannels = 1;
+        const numFrames = duration * sampleRate;
+        
+        // Criar buffer de áudio
+        const buffer = audioContext.createBuffer(numChannels, numFrames, sampleRate);
+        const channelData = buffer.getChannelData(0);
+        
+        // Gerar onda senoidal (bip)
+        const frequency = 800; // Hz
+        for (let i = 0; i < numFrames; i++) {
+          channelData[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate);
+        }
+        
+        beepBuffer = buffer;
         console.log("Áudio inicializado com sucesso");
       } catch (e) {
         console.error("Web Audio API não é suportada neste navegador:", e);
@@ -407,30 +426,27 @@
       }
     }
     
-    // Gerar som de bip
+    // Reproduzir som de bip
     function playBeep() {
-      if (!soundToggle.checked || !audioContext) return;
+      if (!soundToggle.checked || !audioContext || !beepBuffer) return;
       
       try {
-        // Criar oscilador e ganho
-        const oscillator = audioContext.createOscillator();
+        // Criar fonte de áudio
+        const source = audioContext.createBufferSource();
+        source.buffer = beepBuffer;
+        
+        // Criar nó de ganho para controlar o volume
         const gainNode = audioContext.createGain();
+        gainNode.gain.value = volume;
         
-        // Configurar o som
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(1000, audioContext.currentTime); // frequência do bip
-        gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-        
-        // Conexões
-        oscillator.connect(gainNode);
+        // Conectar os nós
+        source.connect(gainNode);
         gainNode.connect(audioContext.destination);
         
-        // Configurar a duração e tocar
-        oscillator.start(audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
-        oscillator.stop(audioContext.currentTime + 0.1);
+        // Reproduzir o som
+        source.start();
         
-        console.log("Som reproduzido com sucesso");
+        console.log("Som reproduzido com volume: " + (volume * 100) + "%");
       } catch (error) {
         console.error("Erro ao reproduzir som:", error);
       }
@@ -445,29 +461,10 @@
       }
     }
     
-    // Ajustar zoom
-    function adjustZoom(direction) {
-      if (direction === 'in') {
-        currentZoom = Math.min(currentZoom + 0.25, 3.0);
-      } else {
-        currentZoom = Math.max(currentZoom - 0.25, 1.0);
-      }
-      
-      zoomLevel.textContent = currentZoom.toFixed(2) + 'x';
-      
-      // Aplicar zoom se a câmera estiver ativa
-      if (currentStream && currentStream.getVideoTracks().length > 0) {
-        const videoTrack = currentStream.getVideoTracks()[0];
-        try {
-          if (typeof videoTrack.applyConstraints === 'function') {
-            videoTrack.applyConstraints({
-              advanced: [{ zoom: currentZoom }]
-            });
-          }
-        } catch (error) {
-          console.error("Erro ao ajustar zoom:", error);
-        }
-      }
+    // Atualizar o volume
+    function updateVolume() {
+      volume = volumeSlider.value / 100;
+      volumeValue.textContent = volumeSlider.value + '%';
     }
     
     // Formatar data e hora
@@ -506,15 +503,6 @@
     
     // Adicionar código ao histórico
     function addToHistory(codeText) {
-      const now = Date.now();
-      
-      // Verificar cooldown para evitar leituras duplicadas
-      if (now - lastScanTime < scanCooldown) {
-        return;
-      }
-      
-      lastScanTime = now;
-      
       // Ignora se for o mesmo código escaneado recentemente
       if (codeText === lastScannedCode) {
         return;
@@ -611,8 +599,6 @@
     async function switchCamera() {
       stopScanner();
       usingFrontCamera = !usingFrontCamera;
-      currentZoom = 1.0; // Reset zoom ao trocar câmera
-      zoomLevel.textContent = currentZoom.toFixed(2) + 'x';
       await startScanner();
     }
     
@@ -635,8 +621,7 @@
           video: {
             facingMode: usingFrontCamera ? "user" : "environment",
             width: { ideal: 1920 }, // Maior resolução para códigos pequenos
-            height: { ideal: 1080 },
-            zoom: currentZoom
+            height: { ideal: 1080 }
           },
           audio: false
         });
@@ -688,13 +673,18 @@
     btnSwitch.addEventListener('click', switchCamera);
     btnClear.addEventListener('click', clearHistory);
     btnTestSound.addEventListener('click', testSound);
-    btnZoomIn.addEventListener('click', () => adjustZoom('in'));
-    btnZoomOut.addEventListener('click', () => adjustZoom('out'));
+    volumeSlider.addEventListener('input', updateVolume);
+    soundToggle.addEventListener('change', function() {
+      if (this.checked) {
+        testSound(); // Testa o som quando ativado
+      }
+    });
     
     // Inicializar áudio e iniciar o scanner quando a página carregar
     window.addEventListener('load', function() {
       initAudio();
       startScanner();
+      updateVolume();
     });
   </script>
 </body>
