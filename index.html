@@ -1,109 +1,500 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Leitor de Código de Barras e QR</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
-      background: #f4f4f9;
-    }
-    h2 {
-      color: #333;
-    }
-    video {
-      width: 100%;
-      max-width: 400px;
-      border: 3px solid #333;
-      border-radius: 12px;
-      margin-bottom: 15px;
-    }
-    #resultado {
-      font-size: 18px;
-      font-weight: bold;
-      color: green;
-      margin-top: 10px;
-    }
-    #erro {
-      color: red;
-      font-size: 14px;
-      margin-top: 10px;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-      margin-top: 20px;
-      text-align: left;
-      max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    li {
-      background: white;
-      padding: 8px;
-      margin: 5px 0;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-family: monospace;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner de Código de Barras</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        header {
+            background: #4a00e0;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        
+        .scanner-section {
+            padding: 20px;
+            text-align: center;
+        }
+        
+        #camera-container {
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+            border-radius: 10px;
+            margin: 15px 0;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border: 2px dashed #4a00e0;
+        }
+        
+        #video {
+            width: 100%;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .camera-placeholder {
+            text-align: center;
+            color: #777;
+            padding: 20px;
+        }
+        
+        .camera-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            background: #4a00e0;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-scan {
+            background: #4a00e0;
+        }
+        
+        .btn-stop {
+            background: #ff416c;
+        }
+        
+        .btn-clear {
+            background: #ff9d00;
+        }
+        
+        .btn-manual {
+            background: #24c6dc;
+        }
+        
+        .items-section {
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .items-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 15px 0;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .item:last-child {
+            border-bottom: none;
+        }
+        
+        .total-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .total {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4a00e0;
+        }
+        
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .status-waiting {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        
+        .status-scanning {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .manual-input {
+            margin-top: 20px;
+            padding: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .manual-input input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        
+        .instructions {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+        
+        .instructions h3 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .troubleshooting {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+        
+        .troubleshooting h3 {
+            color: #ef6c00;
+            margin-bottom: 10px;
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 500px) {
+            .container {
+                border-radius: 15px;
+            }
+            
+            h1 {
+                font-size: 1.3rem;
+            }
+            
+            #camera-container {
+                height: 200px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h2>📷 Escaneie Código de Barras ou QR Code</h2>
-  <video id="preview" playsinline></video>
-  <p id="resultado">Aponte a câmera para o código...</p>
-  <p id="erro"></p>
-
-  <h3>📋 Histórico de Códigos Lidos</h3>
-  <ul id="historico"></ul>
-
-  <!-- Biblioteca ZXing -->
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <script>
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-    const video = document.getElementById('preview');
-    const resultado = document.getElementById('resultado');
-    const erroMsg = document.getElementById('erro');
-    const historico = document.getElementById('historico');
-
-    async function iniciarScanner() {
-      try {
-        const devices = await codeReader.listVideoInputDevices();
-
-        if (devices.length === 0) {
-          erroMsg.textContent = "❌ Nenhuma câmera encontrada!";
-          return;
-        }
-
-        // Procura a câmera traseira
-        let deviceId = devices[0].deviceId;
-        const cameraTraseira = devices.find(d => d.label.toLowerCase().includes("back"));
-        if (cameraTraseira) {
-          deviceId = cameraTraseira.deviceId;
-        }
-
-        // Inicia a leitura
-        await codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
-          if (result) {
-            resultado.textContent = "✅ Código lido: " + result.text;
+    <div class="container">
+        <header>
+            <h1>Scanner de Código de Barras</h1>
+            <div class="subtitle">Aponte para o código e escaneie</div>
+        </header>
+        
+        <div class="scanner-section">
+            <div id="camera-container">
+                <div class="camera-placeholder">
+                    <div class="camera-icon">📷</div>
+                    <p>Câmera não ativada</p>
+                    <p style="font-size: 12px; margin-top: 10px;">Toque em "Iniciar Scanner" e permita o acesso à câmera</p>
+                </div>
+                <video id="video" muted playsinline></video>
+            </div>
             
-            // Evita duplicar se for o mesmo código consecutivo
-            if (!historico.firstChild || historico.firstChild.textContent !== result.text) {
-              const item = document.createElement("li");
-              item.textContent = result.text;
-              historico.insertBefore(item, historico.firstChild); // adiciona no topo
+            <div id="status" class="status status-waiting">Pronto para escanear</div>
+            
+            <button id="btn-scan" class="btn btn-scan">Iniciar Scanner</button>
+            <button id="btn-stop" class="btn btn-stop" disabled>Parar Scanner</button>
+            <button id="btn-clear" class="btn btn-clear">Limpar Tudo</button>
+        </div>
+        
+        <div class="manual-input">
+            <h3>Adicionar manualmente</h3>
+            <input type="text" id="manual-code" placeholder="Digite o código do produto">
+            <button id="btn-add-manual" class="btn btn-manual">Adicionar Item</button>
+        </div>
+        
+        <div class="items-section">
+            <h2>Itens Escaneados</h2>
+            <div id="items-list" class="items-list">
+                <div class="item" style="color: #999; text-align: center;">
+                    Nenhum item escaneado ainda
+                </div>
+            </div>
+            
+            <div class="total-section">
+                <div>Total de Itens:</div>
+                <div id="total" class="total">0</div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>Como usar:</h3>
+            <ul>
+                <li>Toque em "Iniciar Scanner" para ativar a câmera</li>
+                <li>Posicione o código de barras na frente da câmera</li>
+                <li>Toque em "Parar Scanner" para desativar a câmera</li>
+                <li>Toque em "Limpar Tudo" para reiniciar a contagem</li>
+                <li>Use a opção manual se o scanner não funcionar</li>
+            </ul>
+        </div>
+        
+        <div class="troubleshooting">
+            <h3>Se a câmera não abrir:</h3>
+            <ul>
+                <li>Verifique se você permitiu o acesso à câmera</li>
+                <li>Atualize seu navegador para a versão mais recente</li>
+                <li>Use a opção de adicionar manualmente</li>
+                <li>Tente usar o Chrome ou Firefox</li>
+                <li>Verifique se o seu navegador não está em modo de economia de dados</li>
+            </ul>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Scanner de Código de Barras &copy; 2023</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('video');
+            const btnScan = document.getElementById('btn-scan');
+            const btnStop = document.getElementById('btn-stop');
+            const btnClear = document.getElementById('btn-clear');
+            const btnAddManual = document.getElementById('btn-add-manual');
+            const manualCodeInput = document.getElementById('manual-code');
+            const itemsList = document.getElementById('items-list');
+            const totalElement = document.getElementById('total');
+            const statusElement = document.getElementById('status');
+            const cameraContainer = document.getElementById('camera-container');
+            
+            let scanning = false;
+            let items = {};
+            let total = 0;
+            let stream = null;
+            
+            // Inicializar o scanner
+            async function initScanner() {
+                try {
+                    statusElement.textContent = "Acessando a câmera...";
+                    statusElement.className = "status status-scanning";
+                    
+                    // Verificar se o navegador suporta a API de câmera
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error("Seu navegador não suporta acesso à câmera");
+                    }
+                    
+                    // Solicitar acesso à câmera
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: "environment" // Preferir câmera traseira
+                        },
+                        audio: false 
+                    });
+                    
+                    // Configurar o elemento de vídeo
+                    video.srcObject = stream;
+                    video.setAttribute('playsinline', true);
+                    
+                    // Quando o vídeo estiver pronto para reproduzir
+                    video.onloadedmetadata = function() {
+                        video.play();
+                        
+                        // Mostrar o vídeo e esconder o placeholder
+                        video.style.display = 'block';
+                        cameraContainer.querySelector('.camera-placeholder').style.display = 'none';
+                        
+                        scanning = true;
+                        btnScan.disabled = true;
+                        btnStop.disabled = false;
+                        statusElement.textContent = "Aponte para um código de barras";
+                    };
+                    
+                } catch (err) {
+                    console.error("Erro ao acessar a câmera: ", err);
+                    statusElement.textContent = "Erro ao acessar a câmera. Use a opção manual.";
+                    statusElement.className = "status status-error";
+                    btnScan.disabled = false;
+                    btnStop.disabled = true;
+                    
+                    // Mostrar mensagem específica de erro
+                    if (err.name === 'NotAllowedError') {
+                        statusElement.textContent = "Permissão de câmera negada. Use a opção manual.";
+                    } else if (err.name === 'NotFoundError') {
+                        statusElement.textContent = "Nenhuma câmera encontrada. Use a opção manual.";
+                    } else if (err.name === 'NotSupportedError') {
+                        statusElement.textContent = "Seu navegador não suporta esta funcionalidade.";
+                    } else if (err.name === 'NotReadableError') {
+                        statusElement.textContent = "Câmera já em uso por outro aplicativo.";
+                    }
+                }
             }
-          }
+            
+            // Parar o scanner
+            function stopScanner() {
+                scanning = false;
+                btnScan.disabled = false;
+                btnStop.disabled = true;
+                statusElement.textContent = "Scanner parado";
+                statusElement.className = "status status-waiting";
+                
+                // Parar a transmissão da câmera
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+                
+                // Esconder o vídeo e mostrar o placeholder
+                video.style.display = 'none';
+                cameraContainer.querySelector('.camera-placeholder').style.display = 'block';
+            }
+            
+            // Adicionar item manualmente
+            function addItemManual() {
+                const code = manualCodeInput.value.trim();
+                if (code) {
+                    addItem(code);
+                    manualCodeInput.value = '';
+                    manualCodeInput.focus();
+                }
+            }
+            
+            // Adicionar item à lista
+            function addItem(code) {
+                if (items[code]) {
+                    items[code].quantity++;
+                } else {
+                    items[code] = {
+                        code: code,
+                        name: `Produto ${code.substring(0, 4)}`,
+                        quantity: 1
+                    };
+                }
+                
+                total++;
+                updateItemsList();
+                
+                // Feedback visual
+                statusElement.textContent = "Item adicionado: " + code;
+                setTimeout(() => {
+                    if (scanning) {
+                        statusElement.textContent = "Aponte para o próximo código";
+                    } else {
+                        statusElement.textContent = "Pronto para escanear";
+                    }
+                }, 2000);
+            }
+            
+            // Atualizar a lista de itens na tela
+            function updateItemsList() {
+                itemsList.innerHTML = '';
+                
+                if (Object.keys(items).length === 0) {
+                    itemsList.innerHTML = '<div class="item" style="color: #999; text-align: center;">Nenhum item escaneado ainda</div>';
+                } else {
+                    for (const code in items) {
+                        const item = items[code];
+                        const itemElement = document.createElement('div');
+                        itemElement.className = 'item';
+                        itemElement.innerHTML = `
+                            <div>${item.name} (${item.code})</div>
+                            <div>Quantidade: ${item.quantity}</div>
+                        `;
+                        itemsList.appendChild(itemElement);
+                    }
+                }
+                
+                totalElement.textContent = total;
+            }
+            
+            // Limpar todos os itens
+            function clearAll() {
+                items = {};
+                total = 0;
+                updateItemsList();
+                statusElement.textContent = "Lista limpa. Pronto para escanear";
+            }
+            
+            // Event listeners
+            btnScan.addEventListener('click', initScanner);
+            btnStop.addEventListener('click', stopScanner);
+            btnClear.addEventListener('click', clearAll);
+            btnAddManual.addEventListener('click', addItemManual);
+            manualCodeInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addItemManual();
+                }
+            });
+            
+            // Verificar se o navegador suporta a API de câmera
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                statusElement.textContent = "Seu navegador não suporta acesso à câmera. Use a opção manual.";
+                statusElement.className = "status status-error";
+                btnScan.disabled = true;
+            }
         });
-
-      } catch (error) {
-        erroMsg.textContent = "❌ Erro ao acessar a câmera: " + error.message;
-      }
-    }
-
-    iniciarScanner();
-  </script>
+    </script>
 </body>
 </html>
