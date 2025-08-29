@@ -112,6 +112,10 @@
       background: #24c6dc;
     }
     
+    .btn-sound {
+      background: #7b1fa2;
+    }
+    
     #resultado {
       font-size: 18px;
       font-weight: bold;
@@ -231,6 +235,59 @@
       background: #f0f4ff;
       border-radius: 10px;
     }
+    
+    .sound-control {
+      margin-top: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: #4a00e0;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
   </style>
 </head>
 <body>
@@ -257,6 +314,15 @@
       <button id="btnStart" style="display:none;">Retomar Scanner</button>
       <button id="btnSwitch" class="btn-alternative">Trocar Câmera</button>
       <button id="btnClear" class="btn-clear">Limpar Histórico</button>
+      <button id="btnTestSound" class="btn-sound">Testar Som</button>
+    </div>
+    
+    <div class="sound-control">
+      <span>Som:</span>
+      <label class="switch">
+        <input type="checkbox" id="soundToggle" checked>
+        <span class="slider"></span>
+      </label>
     </div>
     
     <div class="counter">
@@ -277,7 +343,7 @@
     </div>
   </div>
 
-  <!-- Biblioteca jsQR como alternativa -->
+  <!-- Biblioteca jsQR -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   
   <script>
@@ -291,6 +357,8 @@
     const btnStart = document.getElementById('btnStart');
     const btnSwitch = document.getElementById('btnSwitch');
     const btnClear = document.getElementById('btnClear');
+    const btnTestSound = document.getElementById('btnTestSound');
+    const soundToggle = document.getElementById('soundToggle');
     const scannerContainer = document.getElementById('scanner-container');
     const cameraPlaceholder = document.getElementById('camera-placeholder');
     
@@ -301,7 +369,54 @@
     let currentStream = null;
     let usingFrontCamera = true;
     let scanInterval = null;
+    let audioContext = null;
 
+    // Inicializar o contexto de áudio
+    function initAudio() {
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {
+        console.error("Web Audio API não é suportada neste navegador:", e);
+        soundToggle.checked = false;
+        soundToggle.disabled = true;
+      }
+    }
+    
+    // Gerar som de bip
+    function playBeep() {
+      if (!soundToggle.checked || !audioContext) return;
+      
+      try {
+        // Criar oscilador e ganho
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        // Configurar o som
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // frequência do bip
+        gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+        
+        // Conexões
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Configurar a duração e tocar
+        oscillator.start(audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+        oscillator.stop(audioContext.currentTime + 0.1);
+        
+      } catch (error) {
+        console.error("Erro ao reproduzir som:", error);
+      }
+    }
+    
+    // Testar o som
+    function testSound() {
+      if (audioContext && soundToggle.checked) {
+        playBeep();
+      }
+    }
+    
     // Formatar data e hora
     function formatDateTime(date) {
       return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
@@ -361,6 +476,9 @@
       totalItems++;
       updateTotal();
       updateHistory();
+      
+      // Tocar som de confirmação
+      playBeep();
       
       // Feedback visual
       resultado.textContent = `✅ Código lido: ${codeText}`;
@@ -504,9 +622,13 @@
     btnStart.addEventListener('click', startScanner);
     btnSwitch.addEventListener('click', switchCamera);
     btnClear.addEventListener('click', clearHistory);
+    btnTestSound.addEventListener('click', testSound);
     
-    // Iniciar o scanner quando a página carregar
-    startScanner();
+    // Inicializar áudio e iniciar o scanner quando a página carregar
+    window.addEventListener('load', function() {
+      initAudio();
+      startScanner();
+    });
   </script>
 </body>
 </html>
