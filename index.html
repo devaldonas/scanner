@@ -364,6 +364,11 @@
     </div>
   </div>
 
+  <!-- Elementos de áudio -->
+  <audio id="beepSound" preload="auto">
+    <source src="https://assets.mixkit.co/sfx/preview/mixkit-beep-confirm-914.mp3" type="audio/mp3">
+  </audio>
+
   <!-- Biblioteca jsQR -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   
@@ -382,6 +387,7 @@
     const soundToggle = document.getElementById('soundToggle');
     const volumeSlider = document.getElementById('volumeSlider');
     const volumeValue = document.getElementById('volumeValue');
+    const beepSound = document.getElementById('beepSound');
     const scannerContainer = document.getElementById('scanner-container');
     const cameraPlaceholder = document.getElementById('camera-placeholder');
     
@@ -392,61 +398,25 @@
     let currentStream = null;
     let usingFrontCamera = true;
     let scanInterval = null;
-    let audioContext = null;
     let volume = 0.8; // Volume padrão (80%)
-    let beepBuffer = null;
+    let lastScanTime = 0;
+    let scanCooldown = 2000; // 2 segundos entre scans
 
-    // Inicializar o contexto de áudio e carregar o som
-    async function initAudio() {
-      try {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // Criar um bip sintético
-        const duration = 0.1;
-        const sampleRate = audioContext.sampleRate;
-        const numChannels = 1;
-        const numFrames = duration * sampleRate;
-        
-        // Criar buffer de áudio
-        const buffer = audioContext.createBuffer(numChannels, numFrames, sampleRate);
-        const channelData = buffer.getChannelData(0);
-        
-        // Gerar onda senoidal (bip)
-        const frequency = 800; // Hz
-        for (let i = 0; i < numFrames; i++) {
-          channelData[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate);
-        }
-        
-        beepBuffer = buffer;
-        console.log("Áudio inicializado com sucesso");
-      } catch (e) {
-        console.error("Web Audio API não é suportada neste navegador:", e);
-        soundToggle.checked = false;
-        soundToggle.disabled = true;
-      }
-    }
-    
     // Reproduzir som de bip
     function playBeep() {
-      if (!soundToggle.checked || !audioContext || !beepBuffer) return;
+      if (!soundToggle.checked) return;
       
       try {
-        // Criar fonte de áudio
-        const source = audioContext.createBufferSource();
-        source.buffer = beepBuffer;
-        
-        // Criar nó de ganho para controlar o volume
-        const gainNode = audioContext.createGain();
-        gainNode.gain.value = volume;
-        
-        // Conectar os nós
-        source.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+        // Configurar volume
+        beepSound.volume = volume;
         
         // Reproduzir o som
-        source.start();
-        
-        console.log("Som reproduzido com volume: " + (volume * 100) + "%");
+        beepSound.currentTime = 0;
+        beepSound.play().then(() => {
+          console.log("Som reproduzido com volume: " + (volume * 100) + "%");
+        }).catch(error => {
+          console.error("Erro ao reproduzir som:", error);
+        });
       } catch (error) {
         console.error("Erro ao reproduzir som:", error);
       }
@@ -454,10 +424,10 @@
     
     // Testar o som
     function testSound() {
-      if (audioContext && soundToggle.checked) {
+      if (soundToggle.checked) {
         playBeep();
       } else {
-        console.log("Áudio não disponível para teste");
+        console.log("Som desativado");
       }
     }
     
@@ -465,6 +435,7 @@
     function updateVolume() {
       volume = volumeSlider.value / 100;
       volumeValue.textContent = volumeSlider.value + '%';
+      beepSound.volume = volume;
     }
     
     // Formatar data e hora
@@ -503,6 +474,15 @@
     
     // Adicionar código ao histórico
     function addToHistory(codeText) {
+      const now = Date.now();
+      
+      // Verificar cooldown para evitar leituras duplicadas
+      if (now - lastScanTime < scanCooldown) {
+        return;
+      }
+      
+      lastScanTime = now;
+      
       // Ignora se for o mesmo código escaneado recentemente
       if (codeText === lastScannedCode) {
         return;
@@ -680,11 +660,16 @@
       }
     });
     
-    // Inicializar áudio e iniciar o scanner quando a página carregar
+    // Iniciar o scanner quando a página carregar
     window.addEventListener('load', function() {
-      initAudio();
       startScanner();
       updateVolume();
+      
+      // Garantir que o áudio seja carregado
+      beepSound.load();
+      beepSound.volume = volume;
+      
+      console.log("Scanner iniciado. Áudio configurado com volume: " + (volume * 100) + "%");
     });
   </script>
 </body>
