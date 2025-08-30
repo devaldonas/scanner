@@ -54,7 +54,7 @@
       border-radius: 6px;
       font-family: monospace;
     }
-    button {
+    button, input[type="file"] {
       margin: 5px;
       padding: 10px 15px;
       border: none;
@@ -81,7 +81,11 @@
   <div>
     <button onclick="copiarCodigos()">📋 Copiar Códigos</button>
     <button onclick="exportarCSV()">⬇️ Exportar CSV</button>
+    <button onclick="resetarHistorico()">🔄 Resetar Histórico</button>
   </div>
+
+  <h3>📦 Importar Estoque</h3>
+  <input type="file" id="estoqueFile" accept=".csv">
 
   <h3>📋 Histórico de Códigos Lidos</h3>
   <ul id="historico"></ul>
@@ -89,6 +93,7 @@
   <!-- Biblioteca ZXing -->
   <script src="https://unpkg.com/@zxing/library@latest"></script>
   <script>
+    let estoque = {}; // será carregado do CSV
     const codeReader = new ZXing.BrowserMultiFormatReader();
     const video = document.getElementById('preview');
     const resultado = document.getElementById('resultado');
@@ -99,7 +104,7 @@
     let codigosLidos = [];
     let contador = 0;
 
-    // som de alerta (bip simples)
+    // som de alerta
     function playBeep() {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = ctx.createOscillator();
@@ -119,30 +124,28 @@
           return;
         }
 
-        // Procura a câmera traseira
         let deviceId = devices[0].deviceId;
         const cameraTraseira = devices.find(d => d.label.toLowerCase().includes("back"));
         if (cameraTraseira) {
           deviceId = cameraTraseira.deviceId;
         }
 
-        // Inicia a leitura
         await codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
           if (result) {
-            resultado.textContent = "✅ Código lido: " + result.text;
+            const codigo = result.text;
+            const nomeProduto = estoque[codigo] || "Produto não cadastrado";
 
-            // Evita duplicar consecutivos
-            if (!codigosLidos.length || codigosLidos[codigosLidos.length - 1] !== result.text) {
-              codigosLidos.push(result.text);
+            resultado.textContent = `✅ Código: ${codigo} | Produto: ${nomeProduto}`;
+
+            if (!codigosLidos.length || codigosLidos[codigosLidos.length - 1] !== codigo) {
+              codigosLidos.push(codigo);
               contador++;
               contadorEl.textContent = "Total lidos: " + contador;
 
-              // adiciona no histórico
               const item = document.createElement("li");
-              item.textContent = result.text;
+              item.textContent = `${codigo} - ${nomeProduto}`;
               historico.insertBefore(item, historico.firstChild);
 
-              // toca som
               playBeep();
             }
           }
@@ -153,24 +156,27 @@
       }
     }
 
-    // copiar códigos para área de transferência
     function copiarCodigos() {
       if (codigosLidos.length === 0) {
         alert("Nenhum código lido ainda!");
         return;
       }
-      navigator.clipboard.writeText(codigosLidos.join("\n"))
+      const texto = codigosLidos.map(c => `${c} - ${estoque[c] || "Produto não cadastrado"}`).join("\n");
+      navigator.clipboard.writeText(texto)
         .then(() => alert("✅ Códigos copiados para a área de transferência!"))
         .catch(() => alert("❌ Erro ao copiar."));
     }
 
-    // exportar códigos em CSV
     function exportarCSV() {
       if (codigosLidos.length === 0) {
         alert("Nenhum código lido ainda!");
         return;
       }
-      const conteudo = "Código\n" + codigosLidos.join("\n");
+      const linhas = ["Código,Produto"];
+      codigosLidos.forEach(c => {
+        linhas.push(`${c},${estoque[c] || "Produto não cadastrado"}`);
+      });
+      const conteudo = linhas.join("\n");
       const blob = new Blob([conteudo], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
 
@@ -180,6 +186,34 @@
       a.click();
       URL.revokeObjectURL(url);
     }
+
+    function resetarHistorico() {
+      codigosLidos = [];
+      contador = 0;
+      contadorEl.textContent = "Total lidos: 0";
+      historico.innerHTML = "";
+      resultado.textContent = "Aponte a câmera para o código...";
+    }
+
+    // carregar estoque do CSV
+    document.getElementById("estoqueFile").addEventListener("change", function(evt) {
+      const file = evt.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const linhas = e.target.result.split("\n").map(l => l.trim()).filter(l => l);
+        estoque = {};
+        for (let i = 1; i < linhas.length; i++) { // ignora cabeçalho
+          const [codigo, produto] = linhas[i].split(",");
+          if (codigo && produto) {
+            estoque[codigo.trim()] = produto.trim();
+          }
+        }
+        alert("✅ Estoque carregado com sucesso!");
+      };
+      reader.readAsText(file);
+    });
 
     iniciarScanner();
   </script>
