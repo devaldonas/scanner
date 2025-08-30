@@ -2,675 +2,108 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Leitor de Código de Barras e QR</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
       padding: 20px;
-      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-      color: #333;
-      min-height: 100vh;
+      background: #f4f4f9;
     }
-    
-    .container {
-      background: white;
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    }
-    
     h2 {
       color: #333;
-      margin-bottom: 20px;
     }
-    
-    .scanner-container {
-      position: relative;
-      margin: 20px auto;
-      width: 100%;
-      max-width: 400px;
-      height: 300px;
-      overflow: hidden;
-      border-radius: 12px;
-      background: #f0f0f0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    
     video {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      max-width: 400px;
+      border: 3px solid #333;
+      border-radius: 12px;
+      margin-bottom: 15px;
     }
-    
-    .scanner-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      border: 2px solid #4a00e0;
-      pointer-events: none;
-    }
-    
-    .scanner-line {
-      position: absolute;
-      width: 100%;
-      height: 2px;
-      background: #4a00e0;
-      top: 50%;
-      animation: scan 2s infinite linear;
-    }
-    
-    @keyframes scan {
-      0% { top: 10%; }
-      50% { top: 90%; }
-      100% { top: 10%; }
-    }
-    
-    .controls {
-      margin: 15px 0;
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    
-    button {
-      padding: 12px 18px;
-      border: none;
-      border-radius: 5px;
-      background: #4a00e0;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    
-    button:hover {
-      background: #2575fc;
-    }
-    
-    button:active {
-      transform: scale(0.95);
-    }
-    
-    .btn-stop {
-      background: #ff416c;
-    }
-    
-    .btn-clear {
-      background: #ff9d00;
-    }
-    
-    .btn-alternative {
-      background: #24c6dc;
-    }
-    
-    .btn-sound {
-      background: #7b1fa2;
-    }
-    
     #resultado {
       font-size: 18px;
       font-weight: bold;
       color: green;
-      margin: 15px 0;
-      min-height: 30px;
-      padding: 10px;
-      border-radius: 5px;
-      background: #f0f8f0;
+      margin-top: 10px;
     }
-    
     #erro {
       color: red;
       font-size: 14px;
-      margin: 10px 0;
-      min-height: 20px;
-      padding: 10px;
-      border-radius: 5px;
-      background: #fff0f0;
+      margin-top: 10px;
     }
-    
-    .status {
-      padding: 10px;
-      border-radius: 5px;
-      margin: 10px 0;
-      font-weight: 500;
-    }
-    
-    .status-scanning {
-      background: #e3f2fd;
-      color: #1565c0;
-    }
-    
-    .status-error {
-      background: #ffebee;
-      color: #c62828;
-    }
-    
-    .counter {
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 10px;
-      margin: 15px 0;
-    }
-    
-    .total {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #4a00e0;
-    }
-    
-    .historico-container {
-      margin-top: 20px;
-      text-align: left;
-    }
-    
-    #historico {
+    ul {
       list-style: none;
       padding: 0;
-      max-height: 200px;
-      overflow-y: auto;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 10px;
+      margin-top: 20px;
+      text-align: left;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
     }
-    
-    #historico li {
+    li {
       background: white;
-      padding: 10px;
+      padding: 8px;
       margin: 5px 0;
-      border: 1px solid #eee;
+      border: 1px solid #ddd;
       border-radius: 6px;
       font-family: monospace;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .item-quantity {
-      background: #4a00e0;
-      color: white;
-      border-radius: 50%;
-      width: 25px;
-      height: 25px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-weight: bold;
-    }
-    
-    .timestamp {
-      font-size: 0.8em;
-      color: #777;
-      margin-top: 5px;
-    }
-    
-    .empty-history {
-      text-align: center;
-      color: #999;
-      font-style: italic;
-      padding: 15px;
-    }
-    
-    .camera-placeholder {
-      color: #777;
-      text-align: center;
-    }
-    
-    .camera-icon {
-      font-size: 3rem;
-      margin-bottom: 10px;
-    }
-    
-    .alternative-methods {
-      margin-top: 20px;
-      padding: 15px;
-      background: #f0f4ff;
-      border-radius: 10px;
-    }
-    
-    .sound-control {
-      margin-top: 15px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 60px;
-      height: 34px;
-    }
-    
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ccc;
-      transition: .4s;
-      border-radius: 34px;
-    }
-    
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 26px;
-      width: 26px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-    
-    input:checked + .slider {
-      background-color: #4a00e0;
-    }
-    
-    input:checked + .slider:before {
-      transform: translateX(26px);
-    }
-    
-    .volume-control {
-      margin-top: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    
-    .volume-slider {
-      width: 100px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>📷 Leitor de Código de Barras e QR Code</h2>
-    
-    <div class="scanner-container" id="scanner-container">
-      <div class="camera-placeholder" id="camera-placeholder">
-        <div class="camera-icon">📷</div>
-        <p>Carregando câmera...</p>
-      </div>
-      <video id="preview" playsinline style="display: none;"></video>
-      <div class="scanner-overlay">
-        <div class="scanner-line"></div>
-      </div>
-    </div>
-    
-    <div id="status" class="status status-scanning">Iniciando câmera...</div>
-    <div id="resultado"></div>
-    <div id="erro"></div>
-    
-    <div class="controls">
-      <button id="btnStop" class="btn-stop">Parar Scanner</button>
-      <button id="btnStart" style="display:none;">Retomar Scanner</button>
-      <button id="btnSwitch" class="btn-alternative">Trocar Câmera</button>
-      <button id="btnClear" class="btn-clear">Limpar Histórico</button>
-      <button id="btnTestSound" class="btn-sound">Testar Som</button>
-    </div>
-    
-    <div class="sound-control">
-      <span>Som:</span>
-      <label class="switch">
-        <input type="checkbox" id="soundToggle" checked>
-        <span class="slider"></span>
-      </label>
-    </div>
-    
-    <div class="volume-control">
-      <span>Volume:</span>
-      <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="80">
-      <span id="volumeValue">80%</span>
-    </div>
-    
-    <div class="counter">
-      <div>Total de Itens Escaneados:</div>
-      <div id="total" class="total">0</div>
-    </div>
-    
-    <div class="historico-container">
-      <h3>📋 Histórico de Leituras</h3>
-      <ul id="historico">
-        <li class="empty-history">Nenhum código escaneado ainda</li>
-      </ul>
-    </div>
-    
-    <div class="alternative-methods">
-      <h3>🔍 Dicas para Melhor Leitura</h3>
-      <p>• Aproxime a câmera para códigos menores</p>
-      <p>• Melhore a iluminação do ambiente</p>
-      <p>• Mantenha a câmera estável</p>
-      <p>• Use a câmera traseira para melhor qualidade</p>
-    </div>
-  </div>
+  <h2>📷 Escaneie Código de Barras ou QR Code</h2>
+  <video id="preview" playsinline></video>
+  <p id="resultado">Aponte a câmera para o código...</p>
+  <p id="erro"></p>
 
-  <!-- Elementos de áudio -->
-  <audio id="beepSound" preload="auto">
-    <source src="https://assets.mixkit.co/sfx/preview/mixkit-beep-confirm-914.mp3" type="audio/mp3">
-  </audio>
+  <h3>📋 Histórico de Códigos Lidos</h3>
+  <ul id="historico"></ul>
 
-  <!-- Biblioteca jsQR -->
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-  
+  <!-- Biblioteca ZXing -->
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
   <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
     const video = document.getElementById('preview');
     const resultado = document.getElementById('resultado');
     const erroMsg = document.getElementById('erro');
     const historico = document.getElementById('historico');
-    const statusElement = document.getElementById('status');
-    const totalElement = document.getElementById('total');
-    const btnStop = document.getElementById('btnStop');
-    const btnStart = document.getElementById('btnStart');
-    const btnSwitch = document.getElementById('btnSwitch');
-    const btnClear = document.getElementById('btnClear');
-    const btnTestSound = document.getElementById('btnTestSound');
-    const soundToggle = document.getElementById('soundToggle');
-    const volumeSlider = document.getElementById('volumeSlider');
-    const volumeValue = document.getElementById('volumeValue');
-    const beepSound = document.getElementById('beepSound');
-    const scannerContainer = document.getElementById('scanner-container');
-    const cameraPlaceholder = document.getElementById('camera-placeholder');
-    
-    let scanning = false;
-    let scannedCodes = {};
-    let totalItems = 0;
-    let lastScannedCode = '';
-    let currentStream = null;
-    let usingFrontCamera = true;
-    let scanInterval = null;
-    let volume = 0.8; // Volume padrão (80%)
-    let lastScanTime = 0;
-    let scanCooldown = 2000; // 2 segundos entre scans
 
-    // Reproduzir som de bip
-    function playBeep() {
-      if (!soundToggle.checked) return;
-      
+    async function iniciarScanner() {
       try {
-        // Configurar volume
-        beepSound.volume = volume;
-        
-        // Reproduzir o som
-        beepSound.currentTime = 0;
-        beepSound.play().then(() => {
-          console.log("Som reproduzido com volume: " + (volume * 100) + "%");
-        }).catch(error => {
-          console.error("Erro ao reproduzir som:", error);
+        const devices = await codeReader.listVideoInputDevices();
+
+        if (devices.length === 0) {
+          erroMsg.textContent = "❌ Nenhuma câmera encontrada!";
+          return;
+        }
+
+        // Procura a câmera traseira
+        let deviceId = devices[0].deviceId;
+        const cameraTraseira = devices.find(d => d.label.toLowerCase().includes("back"));
+        if (cameraTraseira) {
+          deviceId = cameraTraseira.deviceId;
+        }
+
+        // Inicia a leitura
+        await codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
+          if (result) {
+            resultado.textContent = "✅ Código lido: " + result.text;
+            
+            // Evita duplicar se for o mesmo código consecutivo
+            if (!historico.firstChild || historico.firstChild.textContent !== result.text) {
+              const item = document.createElement("li");
+              item.textContent = result.text;
+              historico.insertBefore(item, historico.firstChild); // adiciona no topo
+            }
+          }
         });
+
       } catch (error) {
-        console.error("Erro ao reproduzir som:", error);
-      }
-    }
-    
-    // Testar o som
-    function testSound() {
-      if (soundToggle.checked) {
-        playBeep();
-      } else {
-        console.log("Som desativado");
-      }
-    }
-    
-    // Atualizar o volume
-    function updateVolume() {
-      volume = volumeSlider.value / 100;
-      volumeValue.textContent = volumeSlider.value + '%';
-      beepSound.volume = volume;
-    }
-    
-    // Formatar data e hora
-    function formatDateTime(date) {
-      return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-    }
-    
-    // Atualizar a contagem total
-    function updateTotal() {
-      totalElement.textContent = totalItems;
-    }
-    
-    // Atualizar o histórico na tela
-    function updateHistory() {
-      if (Object.keys(scannedCodes).length === 0) {
-        historico.innerHTML = '<li class="empty-history">Nenhum código escaneado ainda</li>';
-        return;
-      }
-      
-      historico.innerHTML = '';
-      for (const code in scannedCodes) {
-        const item = scannedCodes[code];
-        const li = document.createElement('li');
-        
-        li.innerHTML = `
-          <div>
-            <strong>${item.text}</strong>
-            <div class="timestamp">${formatDateTime(item.timestamp)}</div>
-          </div>
-          <div class="item-quantity">${item.quantity}</div>
-        `;
-        
-        historico.appendChild(li);
-      }
-    }
-    
-    // Adicionar código ao histórico
-    function addToHistory(codeText) {
-      const now = Date.now();
-      
-      // Verificar cooldown para evitar leituras duplicadas
-      if (now - lastScanTime < scanCooldown) {
-        return;
-      }
-      
-      lastScanTime = now;
-      
-      // Ignora se for o mesmo código escaneado recentemente
-      if (codeText === lastScannedCode) {
-        return;
-      }
-      
-      lastScannedCode = codeText;
-      
-      if (scannedCodes[codeText]) {
-        // Código já existe, incrementa a quantidade
-        scannedCodes[codeText].quantity++;
-        scannedCodes[codeText].timestamp = new Date();
-      } else {
-        // Novo código
-        scannedCodes[codeText] = {
-          text: codeText,
-          quantity: 1,
-          timestamp: new Date()
-        };
-      }
-      
-      totalItems++;
-      updateTotal();
-      updateHistory();
-      
-      // Tocar som de confirmação
-      playBeep();
-      
-      // Feedback visual
-      resultado.textContent = `✅ Código lido: ${codeText}`;
-      statusElement.textContent = "Código detectado! Continue escaneando...";
-      statusElement.style.backgroundColor = "#e8f5e9";
-      statusElement.style.color = "#2e7d32";
-      
-      // Volta ao estado normal após 2 segundos
-      setTimeout(() => {
-        statusElement.textContent = "Escaneando... Aponte para o próximo código";
-        statusElement.style.backgroundColor = "#e3f2fd";
-        statusElement.style.color = "#1565c0";
-      }, 2000);
-    }
-    
-    // Tentar decodificar com jsQR
-    function tryDecodeWithJsQR() {
-      if (!video.videoWidth || !video.videoHeight) return;
-      
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      try {
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: "attemptBoth", // Tenta ambos os modos de inversão
-        });
-        
-        if (code) {
-          addToHistory(code.data);
-        }
-      } catch (error) {
-        console.error("Erro ao decodificar:", error);
-      }
-    }
-    
-    // Parar o scanner
-    function stopScanner() {
-      if (scanning) {
-        scanning = false;
-        
-        if (scanInterval) {
-          clearInterval(scanInterval);
-          scanInterval = null;
-        }
-        
-        if (currentStream) {
-          currentStream.getTracks().forEach(track => track.stop());
-          currentStream = null;
-        }
-        
-        video.style.display = 'none';
-        cameraPlaceholder.style.display = 'block';
-        
-        btnStop.style.display = 'none';
-        btnStart.style.display = 'inline-block';
-        statusElement.textContent = "Scanner pausado";
-        statusElement.style.backgroundColor = "#fff3e0";
-        statusElement.style.color = "#ef6c00";
-      }
-    }
-    
-    // Trocar entre câmeras
-    async function switchCamera() {
-      stopScanner();
-      usingFrontCamera = !usingFrontCamera;
-      await startScanner();
-    }
-    
-    // Iniciar/reiniciar o scanner
-    async function startScanner() {
-      if (scanning) return;
-      
-      try {
-        statusElement.textContent = "Acessando a câmera...";
-        statusElement.style.backgroundColor = "#e3f2fd";
-        statusElement.style.color = "#1565c0";
-        
-        // Parar stream atual se existir
-        if (currentStream) {
-          currentStream.getTracks().forEach(track => track.stop());
-        }
-        
-        // Solicitar acesso à câmera
-        currentStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: usingFrontCamera ? "user" : "environment",
-            width: { ideal: 1920 }, // Maior resolução para códigos pequenos
-            height: { ideal: 1080 }
-          },
-          audio: false
-        });
-        
-        // Configurar o vídeo
-        video.srcObject = currentStream;
-        video.onloadedmetadata = function() {
-          video.play();
-          video.style.display = 'block';
-          cameraPlaceholder.style.display = 'none';
-          
-          // Iniciar processo de escaneamento
-          scanning = true;
-          scanInterval = setInterval(tryDecodeWithJsQR, 300); // Verificar a cada 300ms
-          
-          btnStop.style.display = 'inline-block';
-          btnStart.style.display = 'none';
-          statusElement.textContent = "Escaneando... Aponte para um código";
-          statusElement.style.backgroundColor = "#e3f2fd";
-          statusElement.style.color = "#1565c0";
-          erroMsg.textContent = "";
-        };
-        
-      } catch (error) {
-        console.error("Erro ao acessar a câmera:", error);
         erroMsg.textContent = "❌ Erro ao acessar a câmera: " + error.message;
-        statusElement.textContent = "Erro ao acessar a câmera";
-        statusElement.style.backgroundColor = "#ffebee";
-        statusElement.style.color = "#c62828";
       }
     }
-    
-    // Limpar histórico
-    function clearHistory() {
-      scannedCodes = {};
-      totalItems = 0;
-      lastScannedCode = '';
-      updateTotal();
-      updateHistory();
-      resultado.textContent = "";
-      statusElement.textContent = "Histórico limpo. Aponte para um código";
-      statusElement.style.backgroundColor = "#e3f2fd";
-      statusElement.style.color = "#1565c0";
-    }
-    
-    // Event listeners para os botões
-    btnStop.addEventListener('click', stopScanner);
-    btnStart.addEventListener('click', startScanner);
-    btnSwitch.addEventListener('click', switchCamera);
-    btnClear.addEventListener('click', clearHistory);
-    btnTestSound.addEventListener('click', testSound);
-    volumeSlider.addEventListener('input', updateVolume);
-    soundToggle.addEventListener('change', function() {
-      if (this.checked) {
-        testSound(); // Testa o som quando ativado
-      }
-    });
-    
-    // Iniciar o scanner quando a página carregar
-    window.addEventListener('load', function() {
-      startScanner();
-      updateVolume();
-      
-      // Garantir que o áudio seja carregado
-      beepSound.load();
-      beepSound.volume = volume;
-      
-      console.log("Scanner iniciado. Áudio configurado com volume: " + (volume * 100) + "%");
-    });
+
+    iniciarScanner();
   </script>
 </body>
 </html>
