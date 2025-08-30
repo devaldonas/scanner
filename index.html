@@ -196,26 +196,27 @@
     }
 
     // carregar estoque do CSV
-    document.getElementById("estoqueFile").addEventListener("change", function(evt) {
-      const file = evt.target.files[0];
-      if (!file) return;
+document.getElementById("estoqueFile").addEventListener("change", function(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const linhas = e.target.result.split("\n").map(l => l.trim()).filter(l => l);
-        estoque = {};
-        for (let i = 1; i < linhas.length; i++) { // ignora cabeçalho
-          const [codigo, produto] = linhas[i].split(",");
-          if (codigo && produto) {
-            estoque[codigo.trim()] = produto.trim();
-          }
-        }
-        alert("✅ Estoque carregado com sucesso!");
-      };
-      reader.readAsText(file);
-    });
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const linhas = e.target.result.split("\n").map(l => l.trim()).filter(l => l);
+    estoque = {};
+    for (let i = 1; i < linhas.length; i++) { // ignora cabeçalho
+      const [codigo, produto] = linhas[i].split(";").map(item => item.trim()); // usando ponto e vírgula
+      if (codigo && produto) {
+        estoque[codigo] = produto;
+      }
+    }
+    alert("✅ Estoque carregado com sucesso!");
+  };
+  reader.readAsText(file);
+});
 
     iniciarScanner();
   </script>
 </body>
 </html>
+
