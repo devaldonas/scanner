@@ -31,6 +31,12 @@
       font-size: 14px;
       margin-top: 10px;
     }
+    #contador {
+      font-size: 16px;
+      font-weight: bold;
+      margin: 15px 0;
+      color: #222;
+    }
     ul {
       list-style: none;
       padding: 0;
@@ -48,6 +54,20 @@
       border-radius: 6px;
       font-family: monospace;
     }
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #333;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #555;
+    }
   </style>
 </head>
 <body>
@@ -55,6 +75,13 @@
   <video id="preview" playsinline></video>
   <p id="resultado">Aponte a câmera para o código...</p>
   <p id="erro"></p>
+
+  <p id="contador">Total lidos: 0</p>
+
+  <div>
+    <button onclick="copiarCodigos()">📋 Copiar Códigos</button>
+    <button onclick="exportarCSV()">⬇️ Exportar CSV</button>
+  </div>
 
   <h3>📋 Histórico de Códigos Lidos</h3>
   <ul id="historico"></ul>
@@ -67,6 +94,21 @@
     const resultado = document.getElementById('resultado');
     const erroMsg = document.getElementById('erro');
     const historico = document.getElementById('historico');
+    const contadorEl = document.getElementById('contador');
+
+    let codigosLidos = [];
+    let contador = 0;
+
+    // som de alerta (bip simples)
+    function playBeep() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = ctx.createOscillator();
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(1000, ctx.currentTime);
+      oscillator.connect(ctx.destination);
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.15);
+    }
 
     async function iniciarScanner() {
       try {
@@ -88,12 +130,20 @@
         await codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
           if (result) {
             resultado.textContent = "✅ Código lido: " + result.text;
-            
-            // Evita duplicar se for o mesmo código consecutivo
-            if (!historico.firstChild || historico.firstChild.textContent !== result.text) {
+
+            // Evita duplicar consecutivos
+            if (!codigosLidos.length || codigosLidos[codigosLidos.length - 1] !== result.text) {
+              codigosLidos.push(result.text);
+              contador++;
+              contadorEl.textContent = "Total lidos: " + contador;
+
+              // adiciona no histórico
               const item = document.createElement("li");
               item.textContent = result.text;
-              historico.insertBefore(item, historico.firstChild); // adiciona no topo
+              historico.insertBefore(item, historico.firstChild);
+
+              // toca som
+              playBeep();
             }
           }
         });
@@ -101,6 +151,34 @@
       } catch (error) {
         erroMsg.textContent = "❌ Erro ao acessar a câmera: " + error.message;
       }
+    }
+
+    // copiar códigos para área de transferência
+    function copiarCodigos() {
+      if (codigosLidos.length === 0) {
+        alert("Nenhum código lido ainda!");
+        return;
+      }
+      navigator.clipboard.writeText(codigosLidos.join("\n"))
+        .then(() => alert("✅ Códigos copiados para a área de transferência!"))
+        .catch(() => alert("❌ Erro ao copiar."));
+    }
+
+    // exportar códigos em CSV
+    function exportarCSV() {
+      if (codigosLidos.length === 0) {
+        alert("Nenhum código lido ainda!");
+        return;
+      }
+      const conteudo = "Código\n" + codigosLidos.join("\n");
+      const blob = new Blob([conteudo], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "codigos_lidos.csv";
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
     iniciarScanner();
